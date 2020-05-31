@@ -1,0 +1,445 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+    <title>Genome Virus Matcher</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="main.css" />
+    <!-- <script src="https://cdn.jsdelivr.net/npm/json2csv@4.2.1"></script> -->
+
+    <script src="https://demo-scheduler.distributed.computer/dcp-client/dcp-client.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+    <script src="./script.js"></script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header id="header">
+        <div class="inner">
+            <a class="logo"><strong>Genome Matcher</strong></a>
+            <nav id="nav">
+                <a href="#header">Home</a>
+                <a href="#three">Gene Computing</a>
+                <a href="#footer">About Us</a>
+            </nav>
+
+        </div>
+    </header>
+
+    <!-- Banner -->
+    <section id="banner">
+        <div class="inner">
+            <header>
+                <h1>Welcome to GeneMatching</h1>
+            </header>
+
+            <footer>
+                <a href="#three" class="button">Get Started</a>
+            </footer>
+        </div>
+    </section>
+
+
+    <!-- Three -->
+    <section id="three" class="wrapper align-center">
+        <div class="inner">
+            <div class="flex flex-2">
+                <article>
+                    <header>
+                        <h3>Submit a file: CSV, Excel </br> file, or JSON file of your virus</h3>
+                        <div1 id="tabcontent1" class="tabContent3">
+                            <p> Choose file to upload: </p>
+
+                            <form method="POST" enctype="multipart/form-data">
+                                <div>
+                                    <label for="file">Upload Nucleotide (Current Virus) CSV</label>
+                                    <input type="file" id="csvNucleotide_current" name="csv" accept=".csv">
+                                    <!-- <br>
+                                    <input type="submit" value="Submit"> -->
+                                    <script>
+                                        const { compute } = dcp;
+                                        var current = [];
+
+                                        function readSingleFile(evt) {
+
+                                            var f = evt.target.files[0];
+                                            if (f) {
+                                                var r = new FileReader();
+                                                r.onload = function (e) {
+                                                    var contents = e.target.result;
+                                                    var arr = contents.split("\n"), output = [];
+                                                    // console.log(arr);
+                                                    current = arr;
+                                                    init(current);
+
+                                                }
+                                                r.readAsText(f);
+                                                //  document.write(output);
+                                            } else {
+                                                alert("Failed to load file");
+                                            }
+                                        }
+                                        document.getElementById('csvNucleotide_current').addEventListener('change', readSingleFile);
+
+                                        function init(c) {
+                                            var out = [];
+                                            var xhttp = new XMLHttpRequest();
+                                            xhttp.onreadystatechange = function () {
+                                                if (this.readyState == 4 && this.status == 200) {
+                                                    // console.log(this.responseText);
+                                                    var lines = this.responseText.split("\n");
+
+                                                    // for (i = 0; i < lines.length; i++) {
+                                                    //     out.push(Math.round(getEditDistance(lines[i].split(","), c[0].split(",")) * 100) / 100);
+                                                    // }
+
+
+                                                    // for (i = 0; i < 500; i++) {
+                                                    //     out.push(Math.round(getEditDistance(lines[i].split(","), c[0].split(",")) * 100) / 100);
+                                                    // }
+
+                                                    let job = compute.for(0, lines.length - 1, function (i) {
+                                                        progress(1);
+                                                        out.push(Math.round(getEditDistance(lines[i].split(","), c[0].split(",")) * 100) / 100);
+                                                    }
+                                                    )
+
+
+                                                    // Listen for events
+                                                    job.on('status', console.log);
+
+                                                    // Send job to network
+                                                    job.exec(0.001).then(console.log);
+
+                                                    // console.log(lines.length);
+
+                                                    setup(out);
+
+                                                }
+                                            };
+                                            xhttp.open("GET", "sarscov2nucleotidecomplete.csv", true);
+                                            xhttp.send();
+                                        }
+
+                                        //window.onload = init;
+
+                                        function getEditDistance(a, b) {
+                                            if (a.length == 0) return b.length;
+                                            if (b.length == 0) return a.length;
+
+                                            var matrix = [];
+
+                                            // increment along the first column of each row
+                                            var i;
+                                            for (i = 0; i <= b.length; i++) {
+                                                matrix[i] = [i];
+                                            }
+
+                                            // increment each column in the first row
+                                            var j;
+                                            for (j = 0; j <= a.length; j++) {
+                                                matrix[0][j] = j;
+                                            }
+
+                                            // Fill in the rest of the matrix
+                                            for (i = 1; i <= b.length; i++) {
+                                                for (j = 1; j <= a.length; j++) {
+                                                    if (b[(i - 1)] == a[(j - 1)]) {
+                                                        matrix[i][j] = matrix[i - 1][j - 1];
+                                                    } else {
+                                                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, // substitution
+                                                            Math.min(matrix[i][j - 1] + 1, // insertion
+                                                                matrix[i - 1][j] + 1)); // deletion
+                                                    }
+                                                }
+                                            }
+                                            console.log('The pattern difference is: ' + ((60 - (matrix[b.length][a.length])) / 60) * 100 + '%');
+                                            return ((60 - (matrix[b.length][a.length])) / 60) * 100;
+                                        };
+
+                                        // function match(y, x) {
+                                        //     var j = 0;
+                                        //     for (let i = 0; i < y.length; i++) {
+
+                                        //         if (y[i] === x[i]) {
+                                        //             j = j + 1;
+                                        //         }
+                                        //         else {
+                                        //             continue;
+                                        //         }
+                                        //     }
+                                        //     console.log((j / y.length) * 100);
+                                        // }
+
+                                    </script>
+                                </div>
+                            </form>
+
+
+                            <form method="POST" enctype="multipart/form-data">
+                                <div>
+                                    <label for="file">Upload Protein (Current Virus) CSV</label>
+                                    <input type="file" id="csvProtein_current" name="csv" accept=".csv">
+
+                                    <script>
+                                        //  const { compute } = dcp;
+                                        var current = [];
+
+                                        function readSingleFile2(evt) {
+
+                                            var f = evt.target.files[0];
+                                            if (f) {
+                                                var r = new FileReader();
+                                                r.onload = function (e) {
+                                                    var contents = e.target.result;
+                                                    var arr = contents.split("\n"), output = [];
+                                                    // console.log(arr);
+                                                    current = arr;
+                                                    init2(current);
+
+                                                }
+                                                r.readAsText(f);
+                                                //  document.write(output);
+                                            } else {
+                                                alert("Failed to load file");
+                                            }
+                                        }
+                                        document.getElementById('csvProtein_current').addEventListener('change', readSingleFile2);
+
+                                        function init2(c) {
+                                            var out = [];
+                                            var xhttp = new XMLHttpRequest();
+                                            xhttp.onreadystatechange = function () {
+                                                if (this.readyState == 4 && this.status == 200) {
+                                                    // console.log(this.responseText);
+                                                    var lines = this.responseText.split("\n");
+                                                    // console.log(lines[1].split(","));  //prints xhttp open file
+                                                    // console.log(c[0].split(","));         //prints read file input (param)
+                                                    // console.log(lines.length);
+
+                                                    // for (i = 0; i < lines.length; i++) {
+                                                    //     out.push(Math.round(getEditDistance(lines[i].split(","), c[0].split(",")) * 100) / 100);
+                                                    // }
+
+                                                    // for (i = 0; i < 500; i++) {
+                                                    //     out.push(Math.round(getEditDistance(lines[i].split(","), c[0].split(",")) * 100) / 100);
+                                                    // }
+
+                                                    let job = compute.for(0, lines.length - 1, function (i) {
+                                                        progress(1);
+                                                        out.push(Math.round(getEditDistance(lines[i].split(","), c[0].split(",")) * 100) / 100);
+                                                    }
+                                                    )
+
+
+                                                    // Listen for events
+                                                    job.on('status', console.log);
+
+                                                    // Send job to network
+                                                    job.exec(0.001).then(console.log);
+
+                                                    // console.log(lines.length);
+
+                                                    setup2(out);
+
+                                                }
+                                            };
+                                            xhttp.open("GET", "sarscov2proteincomplete.csv", true);
+                                            xhttp.send();
+                                        }
+
+                                        //window.onload = init;
+
+                                        function getEditDistance(a, b) {
+                                            if (a.length == 0) return b.length;
+                                            if (b.length == 0) return a.length;
+
+                                            var matrix = [];
+
+                                            // increment along the first column of each row
+                                            var i;
+                                            for (i = 0; i <= b.length; i++) {
+                                                matrix[i] = [i];
+                                            }
+
+                                            // increment each column in the first row
+                                            var j;
+                                            for (j = 0; j <= a.length; j++) {
+                                                matrix[0][j] = j;
+                                            }
+
+                                            // Fill in the rest of the matrix
+                                            for (i = 1; i <= b.length; i++) {
+                                                for (j = 1; j <= a.length; j++) {
+                                                    if (b[(i - 1)] == a[(j - 1)]) {
+                                                        matrix[i][j] = matrix[i - 1][j - 1];
+                                                    } else {
+                                                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, // substitution
+                                                            Math.min(matrix[i][j - 1] + 1, // insertion
+                                                                matrix[i - 1][j] + 1)); // deletion
+                                                    }
+                                                }
+                                            }
+                                            console.log('The pattern difference is: ' + ((60 - (matrix[b.length][a.length])) / 60) * 100 + '%');
+                                            return ((60 - (matrix[b.length][a.length])) / 60) * 100;
+                                        };
+                                    </script>
+                                </div>
+                            </form>
+                    </header>
+                    <br>
+                    <hr>
+                    <br>
+                    <p>
+                        <canvas id="chart" width="400"></canvas>
+                        <script>
+                            window.addEventListener('load', setup);
+
+
+                            async function setup(y) {
+                                var x = [];
+                                for (i = 1; i < y.length + 1; i++) {
+                                    x.push(i);
+                                }
+                                const ctx = document.getElementById('chart').getContext('2d');
+                                const myChart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: x,  //x-axis
+                                        datasets: [
+                                            {
+                                                label: 'Genome Sequence Difference',
+                                                data: y,    //y-axis
+                                                fill: false,
+                                                borderColor: 'rgba(255, 99, 132, 1)',
+                                                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                                                borderWidth: 1
+                                            }
+                                        ]
+                                    },
+                                    options: {
+                                        title: {
+                                            display: true,
+                                            text: 'Nucleotide Matching'
+                                        },
+                                        scales: {
+                                            yAxes: [{
+                                                ticks: {
+                                                    // Include a dollar sign in the ticks
+                                                    callback: function (value, index, values) {
+                                                        return '%' + value;
+                                                    }
+                                                },
+                                                scaleLabel: {
+                                                    display: true,
+                                                    labelString: 'Percentage Similarity'
+                                                }
+                                            }],
+                                            xAxes: [{
+                                                ticks: {
+                                                    // Include a dollar sign in the ticks
+                                                    callback: function (value, index, values) {
+                                                        return 'Gene #:' + value;
+                                                    }
+                                                },
+                                                scaleLabel: {
+                                                    display: true,
+                                                    labelString: 'Covid-19 Related Nucleotide Virus Sequence'
+                                                }
+                                            }]
+                                        }
+                                    }
+
+                                });
+                            }
+                        </script>
+                        <br />
+                        <br />
+                        <hr>
+                        <br />
+                        <br />
+                        <canvas id="chart2" width="400"></canvas>
+                        <script>
+                            window.addEventListener('load', setup2);
+
+
+                            async function setup2(y) {
+                                var x = [];
+                                for (i = 1; i < y.length + 1; i++) {
+                                    x.push(i);
+                                }
+                                const ctx = document.getElementById('chart2').getContext('2d');
+                                const myChart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: x,  //x-axis
+                                        datasets: [
+                                            {
+                                                label: 'Genome Sequence Difference',
+                                                data: y,    //y-axis
+                                                fill: false,
+                                                borderColor: 'rgba(255, 99, 132, 1)',
+                                                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                                                borderWidth: 1
+                                            }
+                                        ]
+                                    },
+                                    options: {
+                                        title: {
+                                            display: true,
+                                            text: 'Protein Matching'
+                                        },
+                                        scales: {
+                                            yAxes: [{
+                                                ticks: {
+                                                    // Include a dollar sign in the ticks
+                                                    callback: function (value, index, values) {
+                                                        return '%' + value;
+                                                    }
+                                                },
+                                                scaleLabel: {
+                                                    display: true,
+                                                    labelString: 'Percentage Similarity'
+                                                }
+                                            }],
+                                            xAxes: [{
+                                                ticks: {
+                                                    // Include a dollar sign in the ticks
+                                                    callback: function (value, index, values) {
+                                                        return 'Gene #:' + value;
+                                                    }
+                                                },
+                                                scaleLabel: {
+                                                    display: true,
+                                                    labelString: 'Covid-19 Related Protein Virus Sequence'
+                                                }
+                                            }]
+                                        }
+                                    }
+
+                                });
+                            }
+                        </script>
+                    </p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="inner">
+
+            <h3>Team: some name </h3>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+
+
+</body>
+
+</html>
