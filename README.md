@@ -7,3 +7,5 @@ The Entire database of COVID-19 related viruses as nucleotide and protein sequen
 https://drive.google.com/drive/folders/17NsL3NvWfQUp1dxNuZJ3nezgX5dEhWkx?usp=sharing
 
 <img src="https://github.com/DavidC123/GeneMatching/blob/master/inputcsv.png" />
+<br>
+<img src="https://github.com/DavidC123/GeneMatching/blob/master/graph.png" />
